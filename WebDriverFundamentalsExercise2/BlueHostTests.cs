@@ -3,7 +3,6 @@ using OpenQA.Selenium;
 using OpenQA.Selenium.Remote;
 using OpenQA.Selenium.Chrome;
 using System;
-using WebDriverManager;
 using OpenQA.Selenium.Safari;
 using OpenQA.Selenium.Firefox;
 using System.Collections.Generic;
@@ -19,8 +18,6 @@ namespace WebDriverFundamentalsExercise2
     public class Tests
     {
         IWebDriver _driver;
-        private string _ltUserName = "ivaylo.dimg";
-        private string _ltAppKey = "sp72iFEuOCAov1M36gxDcwsqYTFkIfsNI85W670Ai7QRysEkKq";
         private static string _browser;
         private static string _browserVersion;
         private static string _os;
@@ -37,11 +34,12 @@ namespace WebDriverFundamentalsExercise2
         [SetUp]
         public void Setup()
         {
+            var lambdaTestUseName = Environment.GetEnvironmentVariable("LT_USERNAME", EnvironmentVariableTarget.User);
+            var lambdaTestAccessKey = Environment.GetEnvironmentVariable("LT_ACCESS_KEY", EnvironmentVariableTarget.User);
             dynamic capabilities = GetBrowserOptions(_browser);
-
             var ltOptions = new Dictionary<string, object>();
-            ltOptions.Add("user", _ltUserName);
-            ltOptions.Add("accessKey", _ltAppKey);
+            ltOptions.Add("user", Environment.GetEnvironmentVariable("LT_USERNAME"));
+            ltOptions.Add("accessKey", Environment.GetEnvironmentVariable("LT_ACCESS_KEY"));
             ltOptions.Add("build", "WebFundamentalsExercise2");
             ltOptions.Add("name", _name);
             ltOptions.Add("platformName", _os);
@@ -49,21 +47,16 @@ namespace WebDriverFundamentalsExercise2
 
             capabilities.PageLoadStrategy = PageLoadStrategy.Eager;
 
-            _driver = new RemoteWebDriver(new Uri($"https://{_ltUserName}:{_ltAppKey}@hub.lambdatest.com/wd/hub"), capabilities.ToCapabilities());
-
-            //Implicit wait
-            //_driver.Manage().Timeouts().ImplicitWait = System.TimeSpan.FromSeconds(60);
+            _driver = new RemoteWebDriver(new Uri($"https://{Environment.GetEnvironmentVariable("LT_USERNAME")}:{Environment.GetEnvironmentVariable("LT_ACCESS_KEY")}@hub.lambdatest.com/wd/hub"), capabilities.ToCapabilities());
 
             _driver.Manage().Window.Maximize();
             _driver.Url = "https://login.bluehost.com/hosting/webmail";
 
-            //Explicit wait and find element
             var gdprButton = WaitAndFindElement(By.XPath("//*[@id='onetrust-accept-btn-handler']"));
 
             gdprButton.Click();
         }
 
-        //Test1
         [Test]
         public void TryLoggedIn_With_IncorrectEmail_And_IncorrectPassword()
         {
@@ -81,32 +74,27 @@ namespace WebDriverFundamentalsExercise2
             Assert.AreEqual(expectedEmailError,actualEmailError);
         }
 
-        //Test2
         [Test]
         public void TryLoggedIn_With_WithoutEnteringEmail_And_Password()
         {
             var loginButton = WaitAndFindElement(By.XPath("//article//*[@class='btn_secondary']"));
-            var expectedEmailError = "Email is required.";
-            var expectedPasswordError = "Password is required.";
 
             loginButton.Click();
 
-            var actualEmailError = WaitAndFindElement(By.XPath("//article//span[contains(text(),'Email')]")).Text;
-            var actualPasswordError = WaitAndFindElement(By.XPath("//article//span[contains(text(),'Password')]")).Text;
+            var actualEmailError = WaitAndFindElement(By.XPath("//article//span[contains(text(),'Email')]")).Text.Trim();
+            var actualPasswordError = WaitAndFindElement(By.XPath("//article//span[contains(text(),'Password')]")).Text.Trim();
 
-            Assert.AreEqual(expectedEmailError, actualEmailError);
-            Assert.AreEqual(expectedPasswordError, actualPasswordError);
+            Assert.AreEqual("Email is required.", actualEmailError);
+            Assert.AreEqual("Password is required.", actualPasswordError);
         }
 
         [TearDown]
-        public void CloseBrowser()
+        public void TestCleanUp()
         {
             _driver.Quit();
         }
 
-        //Explicit wait and find element
         private IWebElement WaitAndFindElement(By by)
-
         {
             var webDriverWait = new WebDriverWait(_driver, TimeSpan.FromSeconds(30));
 
@@ -119,16 +107,18 @@ namespace WebDriverFundamentalsExercise2
             {
                 return new ChromeOptions();
             }
-            if (browserName.Equals("Safari"))
+            else if (browserName.Equals("Safari"))
             {
                 return new SafariOptions();
             }
-            if (browserName.Equals("Firefox"))
+            else if (browserName.Equals("Firefox"))
             {
                 return new FirefoxOptions();
             }
-
-            return new ChromeOptions();
+            else
+            {
+                return new ChromeOptions();
+            }
         }
     }
 }
