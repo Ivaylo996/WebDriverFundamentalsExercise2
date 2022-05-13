@@ -1,21 +1,21 @@
+using System;
+using System.Collections.Generic;
 using NUnit.Framework;
 using OpenQA.Selenium;
-using OpenQA.Selenium.Remote;
 using OpenQA.Selenium.Chrome;
-using System;
-using OpenQA.Selenium.Safari;
 using OpenQA.Selenium.Firefox;
-using System.Collections.Generic;
+using OpenQA.Selenium.Remote;
+using OpenQA.Selenium.Safari;
 using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
 
-[assembly:Parallelizable(ParallelScope.Fixtures)]
+[assembly: Parallelizable(ParallelScope.Fixtures)]
 namespace WebDriverFundamentalsExercise2
 {
     [TestFixture("Chrome", "101.0", "Windows 10", "Chrome100")]
     [TestFixture("Safari", "15.0", "MacOS Monterey", "Safari16")]
     [TestFixture("Firefox", "99.0", "Windows 10", "Firefox99")]
-    public class Tests
+    public class BlueHostTests
     {
         IWebDriver _driver;
         private static string _browser;
@@ -23,7 +23,7 @@ namespace WebDriverFundamentalsExercise2
         private static string _os;
         private static string _name;
 
-        public Tests(string browser, string browserVersion, string os, string name)
+        public BlueHostTests(string browser, string browserVersion, string os, string name)
         {
             _browser = browser;
             _browserVersion = browserVersion;
@@ -47,6 +47,7 @@ namespace WebDriverFundamentalsExercise2
 
             capabilities.PageLoadStrategy = PageLoadStrategy.Eager;
 
+            string checkUrl = $"https://{Environment.GetEnvironmentVariable("LT_USERNAME")}:{Environment.GetEnvironmentVariable("LT_ACCESS_KEY")}@hub.lambdatest.com/wd/hub";
             _driver = new RemoteWebDriver(new Uri($"https://{Environment.GetEnvironmentVariable("LT_USERNAME")}:{Environment.GetEnvironmentVariable("LT_ACCESS_KEY")}@hub.lambdatest.com/wd/hub"), capabilities.ToCapabilities());
 
             _driver.Manage().Window.Maximize();
@@ -54,11 +55,14 @@ namespace WebDriverFundamentalsExercise2
 
             var gdprButton = WaitAndFindElement(By.XPath("//*[@id='onetrust-accept-btn-handler']"));
 
-            gdprButton.Click();
+            if (gdprButton.Displayed)
+            {
+                gdprButton.Click();
+            }
         }
 
         [Test]
-        public void TryLoggedIn_With_IncorrectEmail_And_IncorrectPassword()
+        public void TryToAuthenticate_With_IncorrectEmail_And_IncorrectPassword()
         {
             var loginEmail = WaitAndFindElement(By.XPath("//article//*[@id='email']"));
             var loginPassword = WaitAndFindElement(By.XPath("//article//*[@id='password']"));
@@ -71,11 +75,11 @@ namespace WebDriverFundamentalsExercise2
 
             var actualEmailError = WaitAndFindElement(By.XPath("//article//*[contains(text(),'Invalid login attempt')]")).Text;
 
-            Assert.AreEqual(expectedEmailError,actualEmailError);
+            Assert.AreEqual(expectedEmailError, actualEmailError);
         }
 
         [Test]
-        public void TryLoggedIn_With_WithoutEnteringEmail_And_Password()
+        public void TryToAuthenticate_With_WithEmptyEmail_And_EmptyPassword()
         {
             var loginButton = WaitAndFindElement(By.XPath("//article//*[@class='btn_secondary']"));
 
@@ -103,21 +107,16 @@ namespace WebDriverFundamentalsExercise2
 
         private dynamic GetBrowserOptions(string browserName)
         {
-            if (browserName.Equals("Chrome"))
+            switch (browserName)
             {
-                return new ChromeOptions();
-            }
-            else if (browserName.Equals("Safari"))
-            {
-                return new SafariOptions();
-            }
-            else if (browserName.Equals("Firefox"))
-            {
-                return new FirefoxOptions();
-            }
-            else
-            {
-                return new ChromeOptions();
+                case "Chrome":
+                    return new ChromeOptions();
+                case "Safari":
+                    return new SafariOptions();
+                case "Firefox":
+                    return new FirefoxOptions();
+                default:
+                    return new ChromeOptions();
             }
         }
     }
