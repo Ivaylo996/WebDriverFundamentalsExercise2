@@ -10,7 +10,7 @@ using OpenQA.Selenium.Support.UI;
 using SeleniumExtras.WaitHelpers;
 
 [assembly: Parallelizable(ParallelScope.Fixtures)]
-namespace WebDriverFundamentalsExercise2
+namespace BlueHost
 {
     [TestFixture("Chrome", "101.0", "Windows 10", "Chrome100")]
     [TestFixture("Safari", "15.0", "MacOS Monterey", "Safari16")]
